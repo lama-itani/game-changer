@@ -57,10 +57,14 @@ def ml_pipeline(clean_data: pd.DataFrame, mdl_type: str):
 
     ml_pipe = make_pipeline(preproc, mdl)
 
-    ## Split data
+    # Split data based on mdl_type: X remains unchanged regardless, y is impacted by mdl_type
     X = clean_data.drop(columns = ["Injured","Injury_Class"])
-    # y is a dataframe with two columns to be encoded prior to training mdl
-    y = clean_data[["Injured","Injury_Class"]]
+    if mdl_type == "LogisticRegression":
+        y = clean_data.Injured
+    elif mdl_type == "MultiOutputClassifier":
+        y = clean_data.Injury_Class
+    else:
+        raise ValueError("Invalid model type")
 
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2)
 
