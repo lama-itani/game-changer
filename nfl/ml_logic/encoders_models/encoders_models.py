@@ -25,10 +25,14 @@ from sklearn.preprocessing import OneHotEncoder
 from sklearn.model_selection import train_test_split
 from sklearn.linear_model import LogisticRegression
 from sklearn.multioutput import MultiOutputClassifier
+from sklearn.metrics import make_scorer, accuracy_score, f1_score, roc_auc_score, precision_score
 
 ### Evaluation
 from sklearn.metrics import confusion_matrix
 from sklearn.metrics  import ConfusionMatrixDisplay
+
+### Save model
+from joblib import dump
 
 ## Import from local packages
 from preprocessor import ml_preprocessing
@@ -49,7 +53,7 @@ def ml_pipeline(clean_data: pd.DataFrame, mdl_type: str):
                                         remainder = "passthrough")
     # Add estimator
     if mdl_type == "LogisticRegression":
-        mdl = LogisticRegression()
+        mdl = LogisticRegression(max_iter = 1_000)
     elif mdl_type == "MultiOutputClassifier":
         mdl = MultiOutputClassifier(LogisticRegression())
     else:
@@ -57,15 +61,38 @@ def ml_pipeline(clean_data: pd.DataFrame, mdl_type: str):
 
     ml_pipe = make_pipeline(preproc, mdl)
 
-    # Split data based on mdl_type: X remains unchanged regardless, y is impacted by mdl_type
+    ## Split data
     X = clean_data.drop(columns = ["Injured","Injury_Class"])
     if mdl_type == "LogisticRegression":
         y = clean_data.Injured
     elif mdl_type == "MultiOutputClassifier":
         y = clean_data.Injury_Class
-    else:
-        raise ValueError("Invalid model type")
+        ohe = OneHotEncoder(handle_unknown = "ignore", sparse_output = False)
+        y = pd.DataFrame(ohe.fit_transform(np.array(y).reshape(-1,1)))
 
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2)
 
-    return ml_pipe, X_train, y_train, X_test, y_test
+    return ml_pipe, mdl_type, X_train, y_train, X_test, y_test
+
+def ml_train(ml_pipe, mdl_type, X_train, y_train, X_test, y_test):
+    #Train pipeline
+    ml_pipe.fit(X_train, y_train)
+
+    # Make predictions
+    y_pred = ml_pipe.predict(X_test)
+
+    # Score model
+    if mdl_type == "LogisticRegression":
+        precision = precision_score(y_test, y_pred, average="weighted")
+        accuracy = accuracy_score(y_test, y_pred)
+        print(f"Precision = {precision}, Accuracy = {accuracy}")
+    elif mdl_type == "MultiOutputClaissifier":
+        score = [precision_score(y_test, y_pred, average='samples'), accuracy_score(y_test, y_pred)]
+        print (f"Precision = {precision}, Accuracy = {accuracy}")
+
+    # Save the model
+    model_filename = f"trained_{mdl_type}.joblib"
+    dump(ml_pipe, model_filename)
+    print(f"Model saved as {model_filename}")
+
+    return y_pred, precision, accuracy
