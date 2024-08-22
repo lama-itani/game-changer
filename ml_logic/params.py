@@ -6,3 +6,5 @@ DATA_FILE = 'data/'
 INJURY_DF = 'InjuryRecord.csv'
 PLAYLIST_DF = 'PlayList.csv'
 TRACKS_DF = 'PlayerTrackData.csv'
+
+RESIZE_STEP = 100
