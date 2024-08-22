@@ -30,7 +30,16 @@ from sklearn.multioutput import MultiOutputClassifier
 from sklearn.metrics import confusion_matrix
 from sklearn.metrics  import ConfusionMatrixDisplay
 
-def ml_pipeline(clean_data, mdl_type):
+## Import from local packages
+from preprocessor import ml_preprocessing
+
+def ml_pipeline(clean_data: pd.DataFrame, mdl_type: str):
+    # Change column names
+    clean_data.rename(columns = {"DM_TOT": "Injury_Class"}, inplace = True)
+
+    # Drop columns
+    clean_data.drop(columns = ["Weather_Temp", "PlayerKey", "GameID", "PlayKey", "Surface"], inplace = True)
+
     # Preprocess
     num_transformer = make_pipeline(SimpleImputer(), RobustScaler())
     cat_transformer = OneHotEncoder()
@@ -48,4 +57,11 @@ def ml_pipeline(clean_data, mdl_type):
 
     ml_pipe = make_pipeline(preproc, mdl)
 
-    return ml_pipe
+    ## Split data
+    X = clean_data.drop(columns = ["Injured","Injury_Class"])
+    # y is a dataframe with two columns to be encoded prior to training mdl
+    y = clean_data[["Injured","Injury_Class"]]
+
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2)
+
+    return ml_pipe, X_train, y_train, X_test, y_test
