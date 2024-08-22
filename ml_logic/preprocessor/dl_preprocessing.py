@@ -8,9 +8,10 @@ def write_to_csv(df, file_name):
     df.to_csv(file_name+'.csv',mode='w+' )
 
 def resize_tracks_df(track_df, step):
-    track_df.iloc[::step, :]
+    track_df = track_df.iloc[::step, :]
     print("===== resized tracks ======")
     print(track_df.head(1))
+    write_to_csv(track_df, 'resize')
     return track_df
 
 def load_data(INJURY_DF,PLAYLIST_DF,TRACKS_DF):
@@ -150,7 +151,6 @@ def engineering_tracks_df_violent_turn(track_df):
 
     print("===== violent turns ======")
     print(track_df.head(1))
-    write_to_csv(track_df, "final")
     return track_df
 
 def merge_df(injury_df,playlist_df,tracks_df):
