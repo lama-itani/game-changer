@@ -93,8 +93,8 @@ def ML_clean_Data(fichier_Injure,fichier_Jeu,Chemin_Data_XLSX):
     colonnes_a_droper=list(drop_table['DROP_COLONNE'])
     # Table finale merge_df_5, qui possède les colonnes qu'on souhaite garder
     merge_df_5=merged_df_4.drop(colonnes_a_droper,axis=1)
-    # On fait un dernier nettoyage sur les 0 de la colonne Weather_Visibilite
-    merge_df_5['Weather_Visibilite']=merge_df_5.Weather_Visibilite.isna().fillna('neutral')
+    # On enleve cette instruction de la version precendente sur Weather_Visibilite
+    # ligne supprimee : merge_df_5['Weather_Visibilite']=merge_df_5.Weather_Visibilite.isna().fillna('neutral')
 
     # ----------------------------------------------------------------------------------------------------
     ### Etape 8 : On fait quelques sorties pour avoir des statistiques de vérification
