@@ -1,25 +1,20 @@
 """
-This file takes in clean data from ml_preprocessing.py and preprocess (scaling & encodine).
+This file takes in clean data frame from ml_preprocessing.py runs it through the ml_pipeline.
+The ml_pipeline returns the data frames (X,y) necessary to train and score the model.
 """
 
-### Import libraries ###
 # 1 - DATA MANIPULATION
 import pandas as pd
 import numpy as np
 
 # 2 - MACHINE LEARNING
 ### Preprocess
-from sklearn.pipeline import make_pipeline
-from sklearn.pipeline import make_union
-from sklearn.compose import make_column_transformer
-from sklearn.compose import make_column_selector
+from sklearn.pipeline import make_pipeline, make_union
+from sklearn.compose import make_column_transformer, make_column_selector
 from sklearn.impute import SimpleImputer
 
-### Scalers
-from sklearn.preprocessing import RobustScaler
-
-### Encoders
-from sklearn.preprocessing import OneHotEncoder
+### Scalers and encoders
+from sklearn.preprocessing import RobustScaler, OneHotEncoder
 
 ### Crossvalidation, Training, Model
 from sklearn.model_selection import train_test_split
