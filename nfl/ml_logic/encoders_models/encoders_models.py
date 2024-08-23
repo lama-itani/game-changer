@@ -53,7 +53,7 @@ def ml_pipeline(clean_data: pd.DataFrame, mdl_type: str):
                                         remainder = "passthrough")
     # Add estimator
     if mdl_type == "LogisticRegression":
-        mdl = LogisticRegression(max_iter = 1_000)
+        mdl = LogisticRegression(max_iter = 10_000)
     elif mdl_type == "MultiOutputClassifier":
         mdl = MultiOutputClassifier(LogisticRegression())
     else:
