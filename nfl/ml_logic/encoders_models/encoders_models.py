@@ -66,6 +66,29 @@ def ml_pipeline(clean_data: pd.DataFrame, mdl_type: str):
     else:
         raise ValueError("Invalid model type")
 
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2)
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size = 0.2)
 
     return ml_pipe, X_train, y_train, X_test, y_test
+
+def ml_train(ml_pipe, mdl_type, X_train, y_train, X_test, y_test):
+    #Train pipeline
+    ml_pipe.fit(X_train, y_train)
+
+    # Make predictions
+    y_pred = ml_pipe.predict(X_test)
+
+    # Score model
+    if mdl_type == "LogisticRegression":
+        precision = precision_score(y_test, y_pred, average="weighted")
+        accuracy = accuracy_score(y_test, y_pred)
+        print(f"Precision = {precision}, Accuracy = {accuracy}")
+    elif mdl_type == "MultiOutputClaissifier":
+        score = [precision_score(y_test, y_pred, average='samples'), accuracy_score(y_test, y_pred)]
+        print (f"Precision = {precision}, Accuracy = {accuracy}")
+
+    # Save the model
+    model_filename = f"trained_{mdl_type}.joblib"
+    dump(ml_pipe, model_filename)
+    print(f"Model saved as {model_filename}")
+
+    return y_pred, precision, accuracy
