@@ -79,3 +79,8 @@ DELETE_COL = ["PlayKey","y", "dir", "dis", "o","s",
                 "PlayerKey_injury", "GameID_injury",
                 "PlayKey_injury","DM_M1", "DM_M7", "DM_M28",
                 "DM_M42","PlayKeyID_tracks","Surface","PositionGroup"]
+
+# For ML
+COLUMNS_TO_DROP = ["PlayerKey", "GameID", "PlayKey",
+                    "RosterPosition", "PlayerGame", "Weather",
+                    "StadiumType","PlayerGamePlay", "PositionGroup"]
