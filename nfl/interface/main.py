@@ -1,6 +1,9 @@
 import timeit
 from preprocessor.dl_preprocessing import *
-from encoders_models.pipelines import *
+
+# Machine learning module
+from preprocessor.ml_preprocessing import *
+from enocoders_models.encoders_models import *
 
 def main(INJURY_DF,PLAYLIST_DF,TRACKS_DF):
     print('skip to model:')
@@ -63,6 +66,22 @@ def main(INJURY_DF,PLAYLIST_DF,TRACKS_DF):
         else:
             pass
 
+def ml_model(INJURY_DF,PLAYLIST_DF,TRACKS_DF):
+    # Load DataFrames
+    injury_data, playlist_data = load_data(INJURY_DF, PLAYLIST_DF)
+
+    # Clean and basic categorization
+    clean_injuryData = clean_injuryData(injury_data, playlist_data)
+    preclean_playlistData = clean_playlist_data(playlist_data)
+
+    # Feature Engineering
+    clean_playlistData = engineered_fatigue(preclean_playlistData)
+
+    # Merge clean_injuryData and clean_playlistData
+    mergePlayerKey, mergeGameID, mergePlayKey = merge_df(clean_injuryData, clean_playlistData)
+
+
 if __name__ == '__main__':
     # execute only if run as the entry point into the program
     main(INJURY_DF,PLAYLIST_DF,TRACKS_DF)
+    ml_model(INJURY_DF,PLAYLIST_DF,TRACKS_DF)

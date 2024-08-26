@@ -11,6 +11,7 @@ def load_data(INJURY_DF,PLAYLIST_DF):
     injury_data = pd.read_csv(injury_path)
     playlist_data = pd.read_csv(playlist_path)
 
+    print("===== Loaded data: injury_data and playlist_data  ======")
     return injury_data, playlist_data
 
 ## Data cleaning
@@ -43,7 +44,7 @@ def clean_injury_data(injury_data, playlist_data):
 
     return injury_data
 
-def clean_playlist_date(playlist_data):
+def clean_playlist_data(playlist_data):
     # Temperature: Replace -999 with the 60F
     playlist_data["Temperature"].replace(-999, 60, inplace = True)
 
@@ -199,6 +200,9 @@ def engineered_fatigue(playlist_data):
     # Remove negative values from Fatigue score
     playlist_data["FatigueScore"] = playlist_data["FatigueScore"].clip(lower=0)
 
+    print("===== Added fatigue features to playlist_data ======")
+    print(playlist_data.head(1))
+
     return playlist_data
 
 ### Merge Injury data and Playlist data
@@ -206,5 +210,7 @@ def merge_df(injury_data: pd.DataFrame,playlist_data: pd.DataFrame):
     mergePlayerKey = pd.merge(playlist_data, injury_data[["PlayerKey","Injured","Injury_Class"]], on = "PlayerKey", how = "left").fillna(0)
     mergeGameID = pd.merge(playlist_data, injury_data[["GameID","Injured","Injury_Class"]], on = "GameID", how = "left").fillna(0)
     mergePlayKey = pd.merge(playlist_data, injury_data[["PlayKey","Injured","Injury_Class"]], on = "PlayKey", how = "left").fillna(0)
+
+    print("===== Merged DataFrame: Output 3 DataFrames ======")
 
     return mergePlayerKey, mergeGameID, mergePlayKey
