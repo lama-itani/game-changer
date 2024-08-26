@@ -14,12 +14,9 @@ def load_data(INJURY_DF,PLAYLIST_DF):
     return injury_data, playlist_data
 
 ## Data cleaning
-def clean_injury_data(injury_data):
-    ####################
-    #### Injury data ###
-    ####################
+def clean_injury_data(injury_data, playlist_data):
     # Step 1: Fetch games where injury PlayKey was not identified (NaN)
-    GameID_nan = GameID_nan = injury_data[injury_data.isna().any(axis = 1)].GameID
+    GameID_nan = injury_data[injury_data.isna().any(axis = 1)].GameID
 
     # Step 2: Assume that injuries happened during the last PlayKey for all players where PlayKey is NaN
     # Fetch entries from playlist_data
@@ -96,6 +93,73 @@ def clean_playlist_date(playlist_data):
     playlist_data["PlayType"].fillna("Pass", inplace = True)
     playlist_data["PlayType"].replace([0, '0', 0.0], "Pass", inplace = True)
 
+    ## Position: Reduce categories to 3 (PositionCategory column) and then to 7 (PositionGranularCategory)
+    # PositionCategory: Defensive, Offensive, Special Teams
+    # Replace Missing Data by P as a poistion, this is a minority group
+    playlist_data["Position"] = playlist_data["Position"].replace("Missing Data", "P")
+
+    # Define the mapping for 3 categories
+    position_category_map = {"QB": "Offensive",
+                            "WR": "Offensive",
+                            "RB": "Offensive",
+                            "TE": "Offensive",
+                            "G": "Offensive",
+                            "T": "Offensive",
+                            "C": "Offensive",
+                            "HB": "Offensive",
+                            "ILB": "Defensive",
+                            "DE": "Defensive",
+                            "FS": "Defensive",
+                            "CB": "Defensive",
+                            "OLB": "Defensive",
+                            "DT": "Defensive",
+                            "SS": "Defensive",
+                            "MLB": "Defensive",
+                            "NT": "Defensive",
+                            "DB": "Defensive",
+                            "LB": "Defensive",
+                            "S": "Defensive",
+                            "P": "Special Teams",
+                            "K": "Special Teams"
+                            }
+
+    # Apply the mapping to create the PositionCategory column
+    playlist_data["PositionCategory"] = playlist_data["Position"].map(position_category_map)
+
+    # PositionGranularCategory:
+    position_granular_map = {
+                # Offensive Categories
+                "QB": "Backfield",
+                "RB": "Backfield",
+                "HB": "Backfield",
+                "WR": "Receivers",
+                "TE": "Receivers",
+                "G": "Offensive Line",
+                "T": "Offensive Line",
+                "C": "Offensive Line",
+
+                # Defensive Categories
+                "DE": "Defensive Line",
+                "DT": "Defensive Line",
+                "NT": "Defensive Line",
+                "ILB": "Linebackers",
+                "OLB": "Linebackers",
+                "MLB": "Linebackers",
+                "LB": "Linebackers",
+                "CB": "Defensive Backs",
+                "FS": "Defensive Backs",
+                "SS": "Defensive Backs",
+                "DB": "Defensive Backs",
+                "S": "Defensive Backs",
+
+                # Special Teams
+                "P": "Kicking Unit",
+                "K": "Kicking Unit"
+                            }
+
+# Apply the mapping to create the GranularPositionCategory column
+    playlist_data["PositionGranularCategory"] = playlist_data["Position"].map(position_granular_map)
+
     print("===== clean_playlist_data ======")
     print(playlist_data.head(1))
 
@@ -134,3 +198,13 @@ def engineered_fatigue(playlist_data):
 
     # Remove negative values from Fatigue score
     playlist_data["FatigueScore"] = playlist_data["FatigueScore"].clip(lower=0)
+
+    return playlist_data
+
+### Merge Injury data and Playlist data
+def merge_df(injury_data: pd.DataFrame,playlist_data: pd.DataFrame):
+    mergePlayerKey = pd.merge(playlist_data, injury_data[["PlayerKey","Injured","Injury_Class"]], on = "PlayerKey", how = "left").fillna(0)
+    mergeGameID = pd.merge(playlist_data, injury_data[["GameID","Injured","Injury_Class"]], on = "GameID", how = "left").fillna(0)
+    mergePlayKey = pd.merge(playlist_data, injury_data[["PlayKey","Injured","Injury_Class"]], on = "PlayKey", how = "left").fillna(0)
+
+    return mergePlayerKey, mergeGameID, mergePlayKey
