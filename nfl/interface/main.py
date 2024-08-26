@@ -1,9 +1,10 @@
 import timeit
-from preprocessor.dl_preprocessing import *
+#from preprocessor.dl_preprocessing import *
 
 # Machine learning module
-from preprocessor.ml_preprocessing import *
-from enocoders_models.encoders_models import *
+from ml_logic.preprocessor.ml_preprocessing import load_data, clean_injury_data, clean_playlist_data, engineered_fatigue, merge_df
+# from ml_logic.encoders_models.encoders_models import *
+from ml_logic.params import *
 
 def main(INJURY_DF,PLAYLIST_DF,TRACKS_DF):
     print('skip to model:')
@@ -66,12 +67,12 @@ def main(INJURY_DF,PLAYLIST_DF,TRACKS_DF):
         else:
             pass
 
-def ml_model(INJURY_DF,PLAYLIST_DF,TRACKS_DF):
+def ml_model(INJURY_DF,PLAYLIST_DF):
     # Load DataFrames
     injury_data, playlist_data = load_data(INJURY_DF, PLAYLIST_DF)
 
     # Clean and basic categorization
-    clean_injuryData = clean_injuryData(injury_data, playlist_data)
+    clean_injuryData = clean_injury_data(injury_data, playlist_data)
     preclean_playlistData = clean_playlist_data(playlist_data)
 
     # Feature Engineering
@@ -80,8 +81,7 @@ def ml_model(INJURY_DF,PLAYLIST_DF,TRACKS_DF):
     # Merge clean_injuryData and clean_playlistData
     mergePlayerKey, mergeGameID, mergePlayKey = merge_df(clean_injuryData, clean_playlistData)
 
-
 if __name__ == '__main__':
     # execute only if run as the entry point into the program
-    main(INJURY_DF,PLAYLIST_DF,TRACKS_DF)
-    ml_model(INJURY_DF,PLAYLIST_DF,TRACKS_DF)
+    #main(INJURY_DF,PLAYLIST_DF,TRACKS_DF)
+    ml_model(INJURY_DF,PLAYLIST_DF)
