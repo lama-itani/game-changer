@@ -1,6 +1,6 @@
 import os
 
-DIR_PATH = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+DIR_PATH = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 DATA_FILE = 'data/'
 
 INJURY_DF = 'InjuryRecord.csv'
@@ -48,3 +48,34 @@ PLAYER = {
     'WR':[72.40,200.32],
     'TE':[76.54,254.26]
 }
+
+TRACKS_AGG = {
+'time':'max',
+'event':'first',
+'x':'mean',
+'y':'mean',
+'dir':'mean',
+'dis':'mean',
+'o':'mean',
+'s':'mean',
+'PlayerKey':'first',
+'GameKey':'first',
+'PlayKeyID':'first',
+'dist_x':'mean',
+'dist_y':'mean',
+'true_dist':'sum',
+'turn':'mean',
+'turn_agg':'max',
+'true_speed':'max',
+'dir_o_diff':'max',
+'45_turn':'count',
+'180_turn':'count',
+'cumsum_45':'max',
+'cumsum_180':'max',
+}
+
+DELETE_COL = ["PlayKey","y", "dir", "dis", "o","s",
+                "PlayKeyID_x","PlayerKey_tracks", "GameID",
+                "PlayerKey_injury", "GameID_injury",
+                "PlayKey_injury","DM_M1", "DM_M7", "DM_M28",
+                "DM_M42","PlayKeyID_tracks","Surface","PositionGroup"]
