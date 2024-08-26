@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
 
-from params import *
+from ml_logic.params import *
 
 ## Load data: Load only 2 .csv files
 def load_data(INJURY_DF,PLAYLIST_DF):
@@ -205,7 +205,7 @@ def engineered_fatigue(playlist_data):
 
     return playlist_data
 
-### Merge Injury data and Playlist data
+## Merge Injury data and Playlist data
 def merge_df(injury_data: pd.DataFrame,playlist_data: pd.DataFrame):
     mergePlayerKey = pd.merge(playlist_data, injury_data[["PlayerKey","Injured","Injury_Class"]], on = "PlayerKey", how = "left").fillna(0)
     mergeGameID = pd.merge(playlist_data, injury_data[["GameID","Injured","Injury_Class"]], on = "GameID", how = "left").fillna(0)
