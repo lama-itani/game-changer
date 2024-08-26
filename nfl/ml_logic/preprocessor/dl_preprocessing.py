@@ -33,13 +33,23 @@ def write_to_csv(df, file_name):
     df.to_csv(file_name+'.csv',mode='w+' )
 
 # Resize DF
-def resize_tracks_df(track_df, step):
-    track_df = track_df.iloc[::step, :]
-    print("===== resized tracks ======")
-    print(track_df.head(1))
-    write_to_csv(track_df, 'resize')
-    return track_df
+def resize_tracks_df(track_df, step=None):
+    if step:
+        track_df = track_df.iloc[::step, :]
+        print("===== resized tracks ======")
+        print(track_df.head(1))
+        return track_df
+    else:
+        return track_df
 
+def resize_tracks_df_playkey(track_df):
+    track_df = (track_df.sort_values(['PlayKey','time']).groupby(['PlayKey']).agg(
+                    TRACKS_AGG
+                    ))
+    print("===== resized tracks by key ======")
+    print(track_df.head(1))
+    #write_to_csv(track_df, 'resize')
+    return track_df
 
 # Load data
 def load_data(INJURY_DF,PLAYLIST_DF,TRACKS_DF):
@@ -56,7 +66,6 @@ def transform_format(injury_df, playlist_df, tracks_df):
     injury_df.to_parquet("cleaned_injury.parquet")
     playlist_df.to_parquet("cleaned_playlist.parquet")
     tracks_df.to_parquet("cleaned_tracks.parquet")
-
     injury_df = pd.read_parquet("cleaned_injury.parquet")
     playlist_df = pd.read_parquet("cleaned_playlist.parquet")
     tracks_df = pd.read_parquet("cleaned_tracks.parquet")
@@ -67,15 +76,22 @@ def optimize_data_type(injury_df, playlist_df, tracks_df):
     injury_df.select_dtypes(include='object').astype("category")
     playlist_df.select_dtypes(include='object').astype("category")
     tracks_df.select_dtypes(include='object').astype("category")
+    injury_df.select_dtypes(include='int').apply(pd.to_numeric, downcast="signed")
+    playlist_df.select_dtypes(include='int').apply(pd.to_numeric, downcast="signed")
+    tracks_df.select_dtypes(include='int').apply(pd.to_numeric, downcast="signed")
+    injury_df.select_dtypes(include='float').apply(pd.to_numeric, downcast="float")
+    playlist_df.select_dtypes(include='float').apply(pd.to_numeric, downcast="float")
+    tracks_df.select_dtypes(include='float').apply(pd.to_numeric, downcast="float")
     return injury_df, playlist_df, tracks_df
 
 # Clean data
 def clean_injury_df(injury_df):
     # ----FILLNA ---- create a playkeyID column with playkey na filled with mode
-    # TODO --> MAKE POSSIBLE TO IMPLEMENT OTHER FILL THAN MODE IN ARGUMENT
     injury_df['PlayKeyID'] = injury_df['PlayKey'].str.split("-").str[2]
-    injury_df['PlayKeyID'].fillna(injury_df['PlayKeyID'].mode()[0], inplace=True)
-    injury_df['new_PlayKey'] = injury_df['GameID']+"-"+injury_df['PlayKeyID']
+    # Replaced fill with 0 to identify missing playkey
+    #injury_df['PlayKeyID'].fillna(injury_df['PlayKeyID'].mode()[0], inplace=True)
+    injury_df['PlayKeyID'].fillna(0, inplace=True)
+    injury_df['new_PlayKey'] = injury_df['GameID']+"-"+injury_df['PlayKeyID'].astype(str)
     print("===== injury_df FILLNA ======")
     print(injury_df.head(1))
     return injury_df
@@ -117,20 +133,24 @@ def engineering_injury_df(injury_df):
 
 # Playlist
 def engineering_playlist_df_max_game(playlist_df):
+    playlist_df['PlayerKey'] = playlist_df['PlayKey'].str.split("-").str[0].astype('int')
+    playlist_df['GameKey'] = playlist_df['PlayKey'].str.split("-").str[1].astype('int')
+    playlist_df['PlayKeyID'] = playlist_df['PlayKey'].str.split("-").str[2].astype('int')
+
     # Add max_game column : max number of game for each player
-    playlist_df['max_game'] = playlist_df['PlayKey'].str.split("-").str[1]
+    playlist_df['max_game'] = playlist_df['PlayKey'].str.split("-").str[1].astype('int')
     playlist_df['max_game']=playlist_df['max_game'].astype(int)
-    playlist_df['max_game'] = (playlist_df.sort_values(['PlayKey']).groupby(['PlayerKey'])['PlayerGame']
+    playlist_df['max_game'] = (playlist_df.sort_values(['PlayerKey','GameKey','PlayKeyID']).groupby(['PlayerKey'])['PlayerGame']
                    .transform(lambda x: x.max()))
 
     # Add total_playkey column : total_playkey played during a game
-    playlist_df['total_playkey'] = playlist_df['PlayKey'].str.split("-").str[2]
+    playlist_df['total_playkey'] = playlist_df['PlayKey'].str.split("-").str[2].astype('int')
     playlist_df['total_playkey']=playlist_df['total_playkey'].astype(int)
-    playlist_df['playkey_max'] = (playlist_df.sort_values(['PlayKey']).groupby(['PlayerKey','GameID'])['total_playkey']
+    playlist_df['playkey_max'] = (playlist_df.sort_values(['PlayerKey','GameKey','PlayKeyID']).groupby(['PlayerKey','GameID'])['total_playkey']
                    .transform(lambda x: x.max()))
 
     # Add playkey_total column : sum of all playkeys played during all games
-    playlist_df['playkey_total'] = (playlist_df.sort_values(['PlayKey']).groupby(['PlayerKey'])['total_playkey']
+    playlist_df['playkey_total'] = (playlist_df.sort_values(['PlayerKey','GameKey','PlayKeyID']).groupby(['PlayerKey'])['total_playkey']
                    .transform(lambda x: x.count()))
     print("===== engineering_playlist_df ======")
     print(playlist_df.head(1))
@@ -157,19 +177,21 @@ def engineering_playlist_df_temp(playlist_df):
 # Tracks
 def engineering_tracks_df_split(track_df):
     # Split playkey col for further taks into game Id, player Id, playkey Id
-    track_df['PlayerKey'] = track_df['PlayKey'].str.split("-").str[0]
-    track_df['GameKey'] = track_df['PlayKey'].str.split("-").str[1]
-    track_df['PlayKeyID'] = track_df['PlayKey'].str.split("-").str[2]
+    track_df['PlayerKey'] = track_df['PlayKey'].str.split("-").str[0].astype('int')
+    track_df['GameKey'] = track_df['PlayKey'].str.split("-").str[1].astype('int')
+    track_df['PlayKeyID'] = track_df['PlayKey'].str.split("-").str[2].astype('int')
     print("===== Split ======")
     print(track_df.head(1))
     return track_df
 
 def engineering_tracks_df_true_distance(track_df):
     # Compute true distance
-    track_df['dist_x'] = (track_df.sort_values(['PlayKey','time']).groupby(['PlayerKey', 'GameKey'])['x']
+    track_df['dist_x'] = (track_df.sort_values(['PlayerKey','GameKey','PlayKeyID','time']).groupby(['PlayerKey', 'GameKey'])['x']
                    .transform(lambda x: round(x.diff(),2)))
-    track_df['dist_y'] = (track_df.sort_values(['PlayKey','time']).groupby(['PlayerKey', 'GameKey'])['y']
+    track_df['dist_y'] = (track_df.sort_values(['PlayerKey','GameKey','PlayKeyID','time']).groupby(['PlayerKey', 'GameKey'])['y']
                     .transform(lambda x: round(x.diff(),2)))
+    track_df['dist_x'].fillna(0, inplace=True)
+    track_df['dist_y'].fillna(0, inplace=True)
     track_df['true_dist'] = round(np.sqrt(track_df['dist_x']**2 + track_df['dist_y']**2),2)
     print("===== true distance ======")
     print(track_df.head(1))
@@ -177,11 +199,12 @@ def engineering_tracks_df_true_distance(track_df):
 
 def engineering_tracks_df_turn(track_df):
     # Turn and turn aggregation
-    track_df['turn'] = (track_df.sort_values(['PlayKey','time']).groupby(['PlayerKey', 'GameKey'])['dir']
+    track_df['turn'] = (track_df.sort_values(['PlayerKey','GameKey','PlayKeyID','time']).groupby(['PlayerKey', 'GameKey'])['dir']
                    .transform(lambda x: round(x.diff(),2)))
-    track_df['turn_agg'] = (track_df.sort_values(['PlayKey','time']).groupby(['PlayerKey', 'GameKey'])['turn']
+    track_df['turn_agg'] = (track_df.sort_values(['PlayerKey','GameKey','PlayKeyID','time']).groupby(['PlayerKey', 'GameKey'])['turn']
                    .transform(lambda x: round(x.rolling(5, min_periods=1).sum(),2)))
-
+    track_df['turn'].fillna(0, inplace=True)
+    track_df['turn_agg'].fillna(0, inplace=True)
     print("===== Turn ======")
     print(track_df.head(1))
     return track_df
@@ -189,6 +212,7 @@ def engineering_tracks_df_turn(track_df):
 def engineering_tracks_df_true_speed(track_df):
     # True speed
     track_df['true_speed'] = round(track_df['true_dist']/track_df['time'],2)
+    track_df['true_speed'].fillna(0, inplace=True)
     print("===== speed ======")
     print(track_df.head(1))
     return track_df
@@ -213,12 +237,14 @@ def engineering_tracks_df_violent_turn(track_df):
     track_df['180_turn'] = track_df['turn'].apply(lambda x : 1 if(x>180 or x<-180) else 0)
 
     # Nb of violent turns
-    track_df['cumsum_45'] = (track_df.sort_values(['PlayKey','time']).groupby(['PlayerKey', 'GameKey'])['45_turn']
+    track_df['cumsum_45'] = (track_df.sort_values(['PlayerKey','GameKey','PlayKeyID','time']).groupby(['PlayerKey', 'GameKey'])['45_turn']
                    .transform(lambda x: x.cumsum()))
-    track_df['cumsum_180'] = (track_df.sort_values(['PlayKey','time']).groupby(['PlayerKey', 'GameKey'])['180_turn']
+    track_df['cumsum_180'] = (track_df.sort_values(['PlayerKey','GameKey','PlayKeyID','time']).groupby(['PlayerKey', 'GameKey'])['180_turn']
                    .transform(lambda x: x.cumsum()))
 
+    track_df = track_df.sort_values(['PlayerKey','GameKey','PlayKeyID','time'])
     print("===== violent turns ======")
+    write_to_csv(track_df, 'final_tracks')
     print(track_df.head(1))
     return track_df
 
@@ -229,3 +255,27 @@ def merge_df(injury_df,playlist_df,tracks_df):
     print(merged_playlist_injury_tracks.head(1))
     write_to_csv(merged_playlist_injury_tracks, 'final')
     return merged_playlist_injury_tracks
+
+def engineering_merged_df_fillna(track_df):
+    track_df['new_PlayKey'].fillna(track_df['PlayKey'], inplace=True)
+    track_df['injury_duration'].fillna(0, inplace=True)
+    track_df['true_speed'].fillna(0, inplace=True)
+    track_df['dist_x'].fillna(value = 0, inplace=True)
+    track_df['dist_y'].fillna(value = 0, inplace=True)
+    track_df['turn'].fillna(value = 0, inplace=True)
+    track_df['turn_agg'].fillna(value = 0, inplace=True)
+    track_df['true_speed'].fillna(value = 0, inplace=True)
+    track_df['Wet'].fillna(value = 'unknown', inplace=True)
+    track_df['Indoor'].fillna(value = 'unknown', inplace=True)
+    track_df['BodyPart'].fillna(value = 'No injury', inplace=True)
+    track_df['PlayKeyID_injury'].fillna(value = '-', inplace=True)
+    track_df['true_speed'] = round(track_df['true_dist']/track_df['time'],2)
+    return track_df
+
+def clean_columns(track_df, col):
+    track_df.head(3)
+    col_cleaned = track_df.drop(columns = DELETE_COL)
+    print("===== Delete unnecessary cols ======")
+    print(col_cleaned.head(1))
+    write_to_csv(col_cleaned, 'col_deleted')
+    return col_cleaned
